@@ -1,0 +1,53 @@
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  imagen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: El .dockerignore existe
+        run: test -f .dockerignore || { echo "Falta el archivo .dockerignore"; exit 1; }
+
+      - name: Construir la imagen
+        run: docker build -t ejercicio-imagenes .
+
+      - name: Levantar el contenedor
+        run: |
+          docker run -d --name servicio -p 8000:8000 ejercicio-imagenes
+          for i in $(seq 1 20); do
+            curl -fsS http://localhost:8000/health >/dev/null 2>&1 && exit 0
+            sleep 2
+          done
+          docker logs servicio
+          exit 1
+
+      - name: El servicio responde
+        run: |
+          salud=$(curl -fsS http://localhost:8000/health)
+          echo "$salud" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"' || { echo "respuesta inesperada: $salud"; exit 1; }
+          inicio=$(curl -fsS http://localhost:8000/)
+          echo "$inicio" | grep -q '"visitas"' || { echo "respuesta inesperada: $inicio"; exit 1; }
+          echo "$inicio"
+
+      - name: El contenedor no corre como root
+        run: |
+          usuario=$(docker exec servicio whoami)
+          echo "el proceso corre como: $usuario"
+          test "$usuario" != "root" || { echo "el contenedor está corriendo como root"; exit 1; }
+
+      - name: La imagen no está inflada
+        run: |
+          bytes=$(docker image inspect ejercicio-imagenes --format '{{.Size}}')
+          mb=$((bytes / 1024 / 1024))
+          echo "la imagen pesa ${mb} MB"
+          test "$mb" -le 300 || { echo "la imagen pesa ${mb} MB: revise la imagen base y lo que copia"; exit 1; }
+
+      - name: Apagar
+        if: always()
+        run: docker rm -f servicio || true
