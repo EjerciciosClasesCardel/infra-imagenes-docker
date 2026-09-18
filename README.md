@@ -17,6 +17,24 @@ aplicación no se toca: lo que se entrega es el empaquetado.
 el número de visitas, y `/health` devuelve `{"status": "ok"}`. Escucha en el
 puerto 8000 y lee dos variables de ambiente, `PORT` y `SALUDO`.
 
+## Requisitos
+
+| Qué | Linux (Debian/Ubuntu) | macOS | Windows |
+|---|---|---|---|
+| Docker Engine | repositorio oficial de Docker, según [docs.docker.com/engine/install](https://docs.docker.com/engine/install/) | Docker Desktop | Docker Desktop, sobre WSL2 |
+| `curl`, para probar el servicio | `sudo apt install curl` | viene con el sistema | viene con Windows 10 y 11 |
+
+En Linux, después de instalar, `sudo usermod -aG docker $USER` y volver a
+iniciar sesión evita el `sudo` en cada `docker`. En macOS y Windows, Docker
+Desktop tiene que estar abierto para que el comando `docker` responda. La
+imagen que se construye es la misma en los tres sistemas; en un Mac con
+Apple Silicon se construye para ARM y el servidor de Actions la vuelve a
+construir para x86-64, así que el `Dockerfile` no debe depender de la
+arquitectura.
+
+Los detalles de cada sistema están en
+[DOCUMENTACION.md](DOCUMENTACION.md), al final.
+
 ## Lo que hay que entregar
 
 Dos archivos en la raíz del repositorio:
